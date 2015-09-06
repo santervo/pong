@@ -4,6 +4,16 @@ $(function() {
 		return Math.min(Math.max(i, min), max)
 	}
 
+	function between(i, min, max) {
+		return i >= min && i <= max
+	}
+
+	function distance(x1, y1, x2, y2) {
+		var xD = x1 - x2
+		var yD = y1 - y2
+		return Math.sqrt(xD*xD + yD*yD)
+	}
+
 	var pong = {
 
 		canvas: null,
@@ -16,9 +26,9 @@ $(function() {
 		tableHeight: 480,
 		paddleWidth: 20,
 		paddleHeight: 80,
-		paddleSpeed: 5,
-		ballRadius: 10,
-		ballSpeed: 10,
+		paddleSpeed: 1,
+		ballWidth: 20,
+		ballSpeed: 5,
 
 		init: function() {
 			this.initCanvas()
@@ -39,11 +49,16 @@ $(function() {
 				y: (this.tableHeight - this.paddleHeight) / 2 
 			}
 
+			this.computer = { 
+				x: this.tableWidth - 2*this.paddleWidth, 
+				y: (this.tableHeight - this.paddleHeight) / 2 
+			}
+
 			this.ball = {
-				x: this.tableWidth / 2,
-				y: this.tableHeight / 2,
-				velX: 0,
-				velY: -this.ballSpeed
+				x: (this.tableWidth + this.ballWidth) / 2,
+				y: (this.tableHeight + this.ballWidth) / 2,
+				velX: -this.ballSpeed,
+				velY: 0
 			}
 		},
 
@@ -89,21 +104,44 @@ $(function() {
 			this.ball.x += this.ball.velX
 			this.ball.y += this.ball.velY
 
-			this.bounceBall()
+			this.handleWallCollision()
+			this.handlePaddleCollisions()
 		},
 
-		bounceBall: function() {
-			var topOffset = this.ball.y - this.ballRadius
-			var bottomOffset = (this.ball.y + this.ballRadius) - this.tableHeight
+		handleWallCollision: function() {
+			var topOffset = this.ball.y
+			var bottomOffset = (this.ball.y + this.ballWidth) - this.tableHeight
 			if(topOffset <= 0 || bottomOffset >= 0) {
 				this.ball.y -= 2*(topOffset <= 0 ? topOffset : bottomOffset)
 				this.ball.velY *= -1
 			}
 		},
 
+
+		handlePaddleCollisions: function() {
+			this.ball.velX < 0 ? this.handlePlayerCollision() : this.handleComputerCollision()
+		},
+
+		handlePlayerCollision: function() {
+			if(this.ball.x <= this.player.x + this.paddleWidth) {
+				var offset = (this.player.x + this.paddleWidth) - this.ball.x
+				this.ball.x += 2*offset
+				this.ball.velX *= -1
+			}
+		},
+
+		handleComputerCollision: function() {
+			if(this.ball.x + this.ballWidth >= this.computer.x) {
+				var offset = (this.ball.x + this.ballWidth) - this.computer.x
+				this.ball.x -= 2*offset
+				this.ball.velX *= -1
+			}
+		},
+
 		draw: function() {
 			this.drawTable()
 			this.drawPaddle(this.player)
+			this.drawPaddle(this.computer)
 			this.drawBall()
 		},
 
@@ -119,9 +157,7 @@ $(function() {
 
 		drawBall: function() {
 			this.ctx.fillStyle = "#FFFFFF"
-			this.ctx.beginPath()
-			this.ctx.arc(this.ball.x, this.ball.y, this.ballRadius, 0, 2*Math.PI)
-			this.ctx.fill()
+			this.ctx.fillRect(this.ball.x, this.ball.y, this.ballWidth, this.ballWidth)
 		}
 	}
 
